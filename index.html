@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dr. Bayes: Clinical Bayesian Diagnostic System & Game</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js from CDN with canvas fallback if offline -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="nav-container">
+            <div class="brand">
+                <div class="brand-icon">🩺</div>
+                <div class="brand-text">
+                    <h1>Dr. Bayes Diagnostic System</h1>
+                    <p>Bayesian Inference & Sequential Probability Updating Engine</p>
+                </div>
+            </div>
+
+            <nav class="nav-tabs">
+                <button class="tab-btn active" data-tab="game">🎮 Play Doctor Game</button>
+                <button class="tab-btn" data-tab="simulator">🔬 Sequential Simulator</button>
+                <button class="tab-btn" data-tab="guide">📚 Bayesian Math & Guide</button>
+            </nav>
+
+            <div class="nav-actions">
+                <button id="soundToggleBtn" class="btn btn-outline btn-sm">🔊 Audio: On</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-wrapper">
+
+        <!-- ============================================== -->
+        <!-- TAB 1: 🎮 INTERACTIVE DOCTOR GAME MODE          -->
+        <!-- ============================================== -->
+        <section id="tab-game" class="tab-content active">
+            <!-- Game Result Celebration/Failure Banner -->
+            <div id="gameResultBanner" class="result-banner hidden"></div>
+
+            <div class="grid-aside">
+                <!-- Left Column: Patient HUD & Diagnostic Orders -->
+                <div class="column-left">
+                    <!-- Patient Record Card -->
+                    <div class="card patient-hud">
+                        <div class="patient-header">
+                            <span class="patient-badge">EMERGENCY ADMISSION</span>
+                            <div class="scenario-selector-wrap">
+                                <select id="gameScenarioSelect" class="select-control">
+                                    <option value="respiratory">Respiratory Differential</option>
+                                    <option value="chest_pain">Emergency Chest Pain</option>
+                                    <option value="tropical_fever">Tropical Fever Mystery</option>
+                                    <option value="screening_paradox">Rare Screening Paradox</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <h2 id="gamePatientName" class="card-title" style="margin-top: 6px;">Patient Loading...</h2>
+                        <div id="gamePatientComplaint" class="patient-complaint-box">"Complaints loading..."</div>
+
+                        <div class="vitals-monitor">
+                            <span class="pulse-indicator"></span>
+                            <span id="gamePatientVitals">HR: 82 bpm | Temp: 38.4°C | SpO2: 97%</span>
+                        </div>
+
+                        <!-- Budget & Tests Meter -->
+                        <div class="game-stats-bar">
+                            <div class="stat-item">
+                                <div class="label">Testing Budget</div>
+                                <div id="gameBudgetVal" class="val">$350</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="label">Spent on Labs</div>
+                                <div id="gameSpentVal" class="val">$0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="label">Tests Executed</div>
+                                <div id="gameTestsCountVal" class="val">0</div>
+                            </div>
+                        </div>
+
+                        <button id="newGameBtn" class="btn btn-outline" style="width: 100%;">
+                            🎲 New Mystery Patient
+                        </button>
+                    </div>
+
+                    <!-- Available Lab Tests to Order -->
+                    <div class="card mt-3">
+                        <div class="card-title">
+                            <span>Order Laboratory & Imaging Tests</span>
+                        </div>
+                        <p class="text-muted small mb-2">Each test costs money and reveals positive or negative findings based on true pathology.</p>
+                        <div id="gameAvailableTestsList" class="game-tests-grid">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Live Sequential Chart & Final Verdict -->
+                <div class="column-right">
+                    <!-- Real-time Posterior Probability Trajectory -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>Sequential Probability Updating ($P_0 \to P_1 \to P_k$)</span>
+                            <span class="badge" style="background: rgba(6,182,212,0.15); color: var(--primary);">Real-Time Trajectory</span>
+                        </div>
+                        <div class="chart-container-box">
+                            <canvas id="gameChartCanvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Final Diagnosis Guess & Decision Panel -->
+                    <div class="card mt-3">
+                        <div class="card-title">
+                            <span>Submit Clinical Diagnosis (Click to finalize verdict)</span>
+                        </div>
+                        <p class="text-muted small">Select the condition you believe the patient has. Your score depends on accuracy, Bayesian calibration, and budget efficiency:</p>
+                        <div id="gameDiagnosisOptionsList" class="diag-choices-grid">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Test Audit History Log -->
+                    <div class="card mt-3">
+                        <div class="card-title">
+                            <span>Diagnostic Test Log</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Diagnostic Procedure</th>
+                                        <th>Cost</th>
+                                        <th>Observed Result</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gameTestLogs">
+                                    <tr><td colspan="4" class="text-muted text-center">No tests ordered yet.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- TAB 2: 🔬 SEQUENTIAL BAYESIAN SIMULATOR         -->
+        <!-- ============================================== -->
+        <section id="tab-simulator" class="tab-content">
+            <div class="simulator-layout">
+                <!-- Controls Column -->
+                <div class="column-left">
+                    <div class="card">
+                        <div class="card-title">
+                            <span>Clinical Scenario</span>
+                        </div>
+                        <select id="simScenarioSelect" class="select-control" style="width: 100%; margin-bottom: 12px;">
+                            <option value="respiratory">Respiratory Infection Differential</option>
+                            <option value="screening_paradox">Base Rate Fallacy (Screening Paradox)</option>
+                            <option value="chest_pain">Emergency Chest Pain Triage</option>
+                            <option value="tropical_fever">Tropical Fever Differential</option>
+                        </select>
+                        <button id="resetSimBtn" class="btn btn-outline btn-sm" style="width: 100%;">
+                            🔄 Reset Evidence & Tests
+                        </button>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-title">
+                            <span>Toggle Observed Evidence</span>
+                        </div>
+                        <p class="text-muted small mb-3">Set tests to Positive (+), Negative (-), or Inactive to inspect dynamic posterior shifts:</p>
+                        <div id="simTestsContainer">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualization & Inspector Column -->
+                <div class="column-right">
+                    <!-- Step Timeline Player -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>Evidence Timeline Playback</span>
+                            <span id="currentStepLabel" class="badge" style="background: rgba(6,182,212,0.2); color: var(--primary);">Baseline Prior</span>
+                        </div>
+                        <div class="timeline-player">
+                            <button id="playTimelineBtn" class="btn btn-primary btn-sm">▶️ Play Timeline</button>
+                            <input type="range" id="stepSlider" class="timeline-slider" min="0" max="0" value="0">
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div class="grid-2 mt-3">
+                        <div class="card">
+                            <div class="card-title">Trajectory Line Chart</div>
+                            <div class="chart-container-box">
+                                <canvas id="trajectoryChartCanvas"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">Current Step Distribution</div>
+                            <div class="chart-container-box">
+                                <canvas id="barChartCanvas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step-by-step Math Inspector -->
+                    <div class="card mt-3">
+                        <div class="card-title">
+                            <span>🔍 Bayesian Mathematical Inspector</span>
+                        </div>
+                        <div id="mathInspectorContent">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- TAB 3: 📚 BAYESIAN MATHEMATICS & GUIDE         -->
+        <!-- ============================================== -->
+        <section id="tab-guide" class="tab-content">
+            <div class="card">
+                <h2 style="margin-bottom: 12px; color: var(--primary);">📐 Clinical Bayesian Decision Theory Guide</h2>
+                <p>Bayes' Theorem provides the optimal mathematical framework for updating diagnostic beliefs in medicine as new clinical evidence and diagnostic test results arrive.</p>
+
+                <hr style="border-color: var(--card-border); margin: 20px 0;">
+
+                <h3>1. Single-Test Bayes' Theorem Formulation</h3>
+                <p>For a differential diagnosis set of mutually exclusive conditions $D_1, D_2, \dots, D_n$ and an observed test result $E$:</p>
+                <div class="formula-box">
+                    $$P(D_i \mid E) = \frac{P(E \mid D_i) \cdot P(D_i)}{\sum_{j=1}^{n} P(E \mid D_j) \cdot P(D_j)}$$
+                </div>
+                <ul style="padding-left: 24px; margin-bottom: 20px;">
+                    <li><strong>Prior Probability $P(D_i)$</strong>: The baseline epidemiological prevalence of condition $D_i$ in the patient population before test results are known.</li>
+                    <li><strong>Likelihood $P(E \mid D_i)$</strong>: The conditional probability that test result $E$ occurs given the patient has condition $D_i$ (Sensitivity for positive result, or $1 - \text{Specificity}$ for false positives).</li>
+                    <li><strong>Marginal Likelihood $P(E)$ (Law of Total Probability)</strong>: The normalizing denominator $\sum_{j=1}^n P(E \mid D_j) P(D_j)$ ensuring all posterior probabilities sum to exactly $1.0$ ($100\%$).</li>
+                    <li><strong>Posterior Probability $P(D_i \mid E)$</strong>: The updated probability that the patient suffers from condition $D_i$ given the observation of test result $E$.</li>
+                </ul>
+
+                <hr style="border-color: var(--card-border); margin: 20px 0;">
+
+                <h3>2. Sequential Bayesian Updating</h3>
+                <p>When multiple diagnostic tests $T_1, T_2, \dots, T_k$ are administered, Bayes' theorem updates iteratively. The posterior distribution from test $k-1$ serves as the prior distribution for test $k$:</p>
+                <div class="formula-box">
+                    $$\text{Posterior}_k(D_i) = P(D_i \mid T_1, \dots, T_k) = \frac{P(T_k \mid D_i) \cdot \text{Posterior}_{k-1}(D_i)}{\sum_{j=1}^n P(T_k \mid D_j) \cdot \text{Posterior}_{k-1}(D_j)}$$
+                </div>
+
+                <hr style="border-color: var(--card-border); margin: 20px 0;">
+
+                <h3>3. The Base Rate Fallacy (Medical Screening Paradox)</h3>
+                <p>Why does a 99% accurate test for a rare disease ($0.1\%$ prevalence) result in most positives being false positives?</p>
+                <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--danger); padding: 14px; border-radius: 6px; margin: 14px 0;">
+                    Suppose a rare syndrome affects 1 in 1,000 people ($P(D) = 0.001$). A screening test has <strong>99% Sensitivity</strong> and <strong>95% Specificity</strong> ($5\%$ false positive rate).
+                    <br><br>
+                    In a population of 100,000 people:
+                    <ul style="padding-left: 20px; margin-top: 6px;">
+                        <li>100 people have the disease &rarr; $100 \times 0.99 = 99$ true positives.</li>
+                        <li>99,900 people are healthy &rarr; $99,900 \times 0.05 = 4,995$ false positives!</li>
+                    </ul>
+                    Therefore, a positive result only indicates a posterior probability of:
+                    $$\frac{99}{99 + 4995} \approx 1.94\%$$
+                    A confirmatory test is mandatory to achieve diagnostic certainty!
+                </div>
+
+                <hr style="border-color: var(--card-border); margin: 20px 0;">
+
+                <h3>4. Information Gain & Shannon Entropy in Diagnostics</h3>
+                <p>Dr. Bayes calculates the <strong>Shannon Entropy</strong> of the differential diagnosis:
+                $$H(D) = -\sum_{i=1}^n P(D_i) \log_2 P(D_i)$$
+                The optimal test to order next is the one that maximizes the <strong>Expected Information Gain</strong> (reduction in diagnostic uncertainty):
+                $$IG(T) = H(D) - \mathbb{E}[H(D \mid T)]$$
+                This allows doctors to pick the most informative and cost-effective test rather than ordering wasteful lab panels.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="bayesian-engine.js"></script>
+    <script src="sound-fx.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
